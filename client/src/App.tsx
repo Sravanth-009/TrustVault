@@ -287,37 +287,116 @@ export default function App() {
     setError("");
     setMessage("");
 
-    // Open the tab immediately so browsers do not block it as a popup.
+    // Open the tab immediately during the click to avoid popup blockers.
     const previewTab = window.open("about:blank", "_blank");
+    if (!previewTab) {
+      showError(new Error("Pop-up blocked. Allow pop-ups for TrustVault, then try Preview again."));
+      return;
+    }
+
+    // Keep the tab open and show progress while the protected request runs.
+    previewTab.document.title = `Preview - ${doc.title}`;
+    previewTab.document.body.innerHTML =
+      "<p style='font-family:Arial,sans-serif;padding:24px'>Loading secure preview…</p>";
+
+    let objectUrl: string | null = null;
 
     try {
-      const response = await fetch(
+      let response = await fetch(
         `${API_URL}/documents/${encodeURIComponent(doc.id)}/preview`,
         { credentials: "include" },
       );
 
+      // Some formats are intentionally not previewable by the backend.
+      // Try the protected download endpoint so we can render supported types
+      // locally and provide a download link for other types.
+      if (!response.ok && response.status === 415) {
+        response = await fetch(
+          `${API_URL}/documents/${encodeURIComponent(doc.id)}/download`,
+          { credentials: "include" },
+        );
+      }
+
       if (!response.ok) {
         const data = await response.json().catch(() => null);
         throw new Error(
-          data?.error || data?.message || `Preview failed (${response.status}).`,
+          data?.message || data?.error || `Unable to load file (${response.status}).`,
         );
       }
 
       const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
+      const mime = (blob.type || doc.mimeType || "application/octet-stream")
+        .split(";")[0]
+        .trim()
+        .toLowerCase();
+      const filename = doc.originalName || doc.title || "document";
+      objectUrl = URL.createObjectURL(blob);
+      const safeTitle = (doc.title || filename).replace(/[&<>"']/g, (ch) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+      })[ch]!);
+      const safeFilename = filename.replace(/[&<>"']/g, (ch) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+      })[ch]!);
+      const url = objectUrl;
+      const isImage = mime.startsWith("image/") && mime !== "image/svg+xml";
+      const isText = mime.startsWith("text/") || [
+        "application/json", "application/xml", "application/javascript",
+      ].includes(mime) || /\.(txt|csv|json|xml|md|log)$/i.test(filename);
+      const isPdf = mime === "application/pdf" || /\.pdf$/i.test(filename);
+      const isVideo = mime.startsWith("video/");
+      const isAudio = mime.startsWith("audio/");
 
-      if (previewTab) {
-        previewTab.location.href = url;
+      let viewer = "";
+      if (isImage) {
+        viewer = `<main class="media"><img src="${url}" alt="${safeFilename}"></main>`;
+      } else if (isPdf) {
+        viewer = `<iframe class="frame" src="${url}" title="${safeTitle}"></iframe>`;
+      } else if (isVideo) {
+        viewer = `<main class="media"><video controls autoplay src="${url}">Your browser cannot play this video.</video></main>`;
+      } else if (isAudio) {
+        viewer = `<main class="media"><audio controls autoplay src="${url}">Your browser cannot play this audio.</audio></main>`;
+      } else if (isText) {
+        // Fetch the blob as text and insert it with textContent below (never as HTML).
+        viewer = `<main class="text-view"><pre id="text-content">Loading text…</pre></main>`;
       } else {
-        window.open(url, "_blank", "noopener,noreferrer");
+        viewer = `<main class="unsupported"><div class="file-icon">⇩</div><h2>This file needs a compatible application</h2><p>TrustVault can protect and download this file, but your browser cannot display this format directly.</p><a class="download" href="${url}" download="${safeFilename}">Download ${safeFilename}</a></main>`;
       }
 
-      // Keep the object URL alive while the preview tab loads.
-      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      previewTab.document.open();
+      previewTab.document.write(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${safeTitle} · TrustVault</title><style>
+        *{box-sizing:border-box}body{margin:0;background:#f3f5f9;color:#182230;font:15px Arial,sans-serif}.bar{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:14px 20px;background:#fff;border-bottom:1px solid #dce1e9;position:sticky;top:0}.name{font-weight:700;overflow-wrap:anywhere}.download{display:inline-block;padding:10px 14px;border-radius:8px;background:#2457d6;color:#fff;text-decoration:none;font-weight:700}.frame{width:100%;height:calc(100vh - 58px);border:0;background:#fff}.media{min-height:calc(100vh - 58px);display:flex;align-items:center;justify-content:center;padding:24px}.media img{max-width:100%;max-height:calc(100vh - 110px);object-fit:contain}.media video{max-width:100%;max-height:calc(100vh - 100px)}audio{width:min(720px,100%)}.text-view{padding:24px;max-width:1100px;margin:auto}.text-view pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#fff;padding:24px;border-radius:12px;box-shadow:0 2px 12px #18223012}.unsupported{text-align:center;max-width:620px;margin:12vh auto;padding:32px}.file-icon{font-size:48px}.unsupported p{line-height:1.6;color:#526071}.unsupported .download{margin-top:12px}
+      </style></head><body><header class="bar"><span class="name">${safeTitle}</span><a class="download" href="${url}" download="${safeFilename}">Download file</a></header>${viewer}</body></html>`);
+      previewTab.document.close();
+
+      if (isText) {
+        const textContent = await blob.text();
+        const pre = previewTab.document.getElementById("text-content");
+        if (pre) pre.textContent = textContent;
+      }
+
+      // Keep object URLs alive while the preview tab is open. Revoke when it closes.
+      const releaseUrl = () => {
+        if (objectUrl) {
+          URL.revokeObjectURL(objectUrl);
+          objectUrl = null;
+        }
+      };
+      previewTab.addEventListener("beforeunload", releaseUrl, { once: true });
+      window.setTimeout(() => {
+        if (objectUrl && previewTab.closed) releaseUrl();
+      }, 5 * 60 * 1000);
+
       setMessage(`Preview opened for "${doc.title}".`);
     } catch (err) {
-      previewTab?.close();
-      showError(err);
+      const message = err instanceof Error ? err.message : "Unable to preview this file.";
+      // Do not close the tab: show the error and a route back to the app.
+      previewTab.document.open();
+      previewTab.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Preview unavailable</title></head><body style="font:16px Arial,sans-serif;padding:32px;line-height:1.6"><h2>Preview unavailable</h2><p id="error"></p><p>You can return to TrustVault and use Download.</p></body></html>`);
+      previewTab.document.close();
+      const errorNode = previewTab.document.getElementById("error");
+      if (errorNode) errorNode.textContent = message;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      showError(new Error(message));
     }
   }
 
@@ -686,11 +765,11 @@ export default function App() {
             <label className={`file-drop ${file ? "file-selected" : ""}`} htmlFor="document-file">
               <span className="upload-icon">↑</span>
               <strong>{file ? file.name : "Choose a file"}</strong>
-              <span>{file ? formatSize(file.size) : "PDF, PNG, JPG, TXT, DOCX · Max 10 MB"}</span>
+              <span>{file ? formatSize(file.size) : "Choose any file format · Max 10 MB"}</span>
               <input
                 id="document-file"
                 type="file"
-                accept=".pdf,.png,.jpg,.jpeg,.txt,.docx"
+                accept="*/*"
                 onChange={(event) => setFile(event.target.files?.[0] || null)}
                 required
               />
