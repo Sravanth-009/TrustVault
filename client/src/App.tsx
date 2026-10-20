@@ -2,7 +2,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import "./App.css";
 
-const API_URL = "http://localhost:4000/api";
+// Uses Vercel's VITE_API_URL in production and localhost for local development.
+const API_URL = (
+  import.meta.env.VITE_API_URL || "http://localhost:4000/api"
+).replace(/\/+$/, "");
 
 type User = {
   id: string;
