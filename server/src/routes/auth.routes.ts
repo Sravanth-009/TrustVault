@@ -1,4 +1,3 @@
-
 import { Router } from "express";
 import argon2 from "argon2";
 import { z } from "zod";
@@ -19,6 +18,8 @@ const loginSchema = z.object({
 });
 
 // Register: public accounts always receive the VIEWER role.
+// After creating the account, establish a session so the user is signed in
+// immediately and can go directly to the dashboard.
 router.post("/register", async (req, res) => {
   const parsed = registerSchema.safeParse(req.body);
 
@@ -53,18 +54,54 @@ router.post("/register", async (req, res) => {
       },
     });
 
-    await recordAudit({
-      actorId: user.id,
-      action: "REGISTER",
-      success: true,
-      ipAddress: req.ip,
-      userAgent: req.get("user-agent"),
-    });
+    try {
+      await recordAudit({
+        actorId: user.id,
+        action: "REGISTER",
+        success: true,
+        ipAddress: req.ip,
+        userAgent: req.get("user-agent"),
+      });
+    } catch (auditError) {
+      console.error("Registration audit failed:", auditError);
+      // Do not leave a newly created account unable to sign in because
+      // an audit write failed. Continue with session creation.
+    }
 
-    return res.status(201).json({
-      success: true,
-      message: "Registration successful",
-      user,
+    req.session.regenerate((sessionError) => {
+      if (sessionError) {
+        console.error("Registration session regeneration failed:", sessionError);
+        return res.status(500).json({
+          success: false,
+          message:
+            "Account created, but automatic sign-in failed. Please sign in with your new account.",
+        });
+      }
+
+      req.session.userId = user.id;
+
+      req.session.save((saveError) => {
+        if (saveError) {
+          console.error("Registration session save failed:", saveError);
+          return res.status(500).json({
+            success: false,
+            message:
+              "Account created, but automatic sign-in failed. Please sign in with your new account.",
+          });
+        }
+
+        return res.status(201).json({
+          success: true,
+          message: "Registration successful",
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            createdAt: user.createdAt,
+          },
+        });
+      });
     });
   } catch (error) {
     if (
