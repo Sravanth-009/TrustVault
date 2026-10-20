@@ -13,7 +13,7 @@
   },
   "include": [
     "src/**/*.ts",
-    "prisma7.config.ts"
+    "generated/**/*.ts"
   ],
   "exclude": [
     "node_modules",
