@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String       @id @default(cuid())
+  name         String
+  email        String       @unique
+  passwordHash String
+  role         UserRole     @default(VIEWER)
+  active       Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  auditEvents  AuditLog[]   @relation("AuditActor")
+  documents    Document[]   @relation("DocumentOwner")
+  grantsGiven  Permission[] @relation("PermissionGrantor")
+  permissions  Permission[] @relation("PermissionRecipient")
+}
+
+model Document {
+  id           String       @id @default(cuid())
+  title        String
+  originalName String
+  storageKey   String       @unique
+  mimeType     String
+  sizeBytes    BigInt
+  category     String?
+  ownerId      String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  deletedAt    DateTime?
+  auditEvents  AuditLog[]
+  owner        User         @relation("DocumentOwner", fields: [ownerId], references: [id])
+  permissions  Permission[]
+
+  @@index([ownerId])
+  @@index([category])
+  @@index([createdAt])
+  @@index([deletedAt])
+}
+
+model Permission {
+  id          String          @id @default(cuid())
+  documentId  String
+  userId      String
+  grantedById String
+  level       PermissionLevel
+  grantedAt   DateTime        @default(now())
+  revokedAt   DateTime?
+  document    Document        @relation(fields: [documentId], references: [id])
+  grantedBy   User            @relation("PermissionGrantor", fields: [grantedById], references: [id])
+  user        User            @relation("PermissionRecipient", fields: [userId], references: [id])
+
+  @@unique([documentId, userId])
+  @@index([userId, revokedAt])
+  @@index([documentId, revokedAt])
+}
+
+model AuditLog {
+  id            String    @id @default(cuid())
+  actorId       String?
+  documentId    String?
+  action        String
+  success       Boolean
+  ipAddress     String?
+  userAgent     String?
+  details       Json?
+  createdAt     DateTime  @default(now())
+  previousHash  String?
+  integrityHash String?   @unique
+  actor         User?     @relation("AuditActor", fields: [actorId], references: [id])
+  document      Document? @relation(fields: [documentId], references: [id])
+
+  @@index([actorId, createdAt])
+  @@index([documentId, createdAt])
+  @@index([action, createdAt])
+}
+
+model user_sessions {
+  sid    String   @id(map: "session_pkey") @db.VarChar
+  sess   Json     @db.Json
+  expire DateTime @db.Timestamp(6)
+
+  @@index([expire], map: "IDX_session_expire")
+}
+
+enum UserRole {
+  ADMIN
+  OWNER
+  VIEWER
+}
+
+enum PermissionLevel {
+  READ
+  EDIT
+}

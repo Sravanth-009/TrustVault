@@ -1,0 +1,23 @@
+﻿# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies and build output
+node_modules/
+dist/
+
+# Private uploaded documents
+private_uploads/
+
+# AI editor metadata
+.agents/
+.claude/
+.windsurf/
+
+# Temporary test files
+server/preview-test.txt
+server/trustvault-test.txt
+
+# Local schema backup
+server/prisma/schema.local-backup.prisma
