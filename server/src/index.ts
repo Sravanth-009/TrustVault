@@ -1,4 +1,3 @@
-
 import "dotenv/config";
 
 import express from "express";
@@ -41,6 +40,7 @@ const sessionPool = new Pool({
 const PgSessionStore = connectPgSimple(session);
 
 app.disable("x-powered-by");
+app.set("trust proxy", 1);
 app.use(helmet());
 
 app.use(
@@ -75,7 +75,7 @@ app.use(
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 1000 * 60 * 60 * 8,
     },
   }),
