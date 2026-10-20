@@ -122,6 +122,7 @@ export default function App() {
   const [activityDocument, setActivityDocument] = useState<DocumentItem | null>(null);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [loadingActivity, setLoadingActivity] = useState(false);
+  const [deletingDocumentId, setDeletingDocumentId] = useState<string | null>(null);
 
   const showError = (value: unknown) => {
     setError(value instanceof Error ? value.message : "Something went wrong.");
@@ -397,6 +398,38 @@ export default function App() {
       if (errorNode) errorNode.textContent = message;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
       showError(new Error(message));
+    }
+  }
+
+  async function handleDelete(doc: DocumentItem) {
+    // Frontend guard for usability; the backend independently enforces ownership.
+    if (!user || doc.ownerId !== user.id) {
+      showError(new Error("Only the document owner can delete this file."));
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Permanently delete "${doc.title}"? Shared users will lose access to this document.`,
+    );
+    if (!confirmed) return;
+
+    setDeletingDocumentId(doc.id);
+    setError("");
+    setMessage("");
+
+    try {
+      await apiRequest(`/documents/${encodeURIComponent(doc.id)}`, {
+        method: "DELETE",
+      });
+
+      setDocuments((current) => current.filter((item) => item.id !== doc.id));
+      if (sharingDocument?.id === doc.id) setSharingDocument(null);
+      if (activityDocument?.id === doc.id) setActivityDocument(null);
+      setMessage(`"${doc.title}" was deleted successfully.`);
+    } catch (err) {
+      showError(err);
+    } finally {
+      setDeletingDocumentId(null);
     }
   }
 
@@ -893,6 +926,14 @@ export default function App() {
                           onClick={() => void openSharing(doc)}
                         >
                           <span>♧</span> Share
+                        </button>
+                        <button
+                          className="button button-outline button-small"
+                          onClick={() => void handleDelete(doc)}
+                          disabled={deletingDocumentId === doc.id}
+                          title="Delete this document permanently"
+                        >
+                          {deletingDocumentId === doc.id ? "Deleting..." : "🗑 Delete"}
                         </button>
                       </>
                     )}

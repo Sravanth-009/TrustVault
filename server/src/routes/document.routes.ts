@@ -259,6 +259,105 @@ router.get("/", async (req, res): Promise<void> => {
   }
 });
 
+// DELETE /api/documents/:documentId — Only the original owner can delete a document.
+// This is a soft delete in the database so audit history can remain intact;
+// the stored file is also removed from the server's local upload directory.
+router.delete(
+  "/:documentId",
+  async (req, res): Promise<void> => {
+    const userId = req.authUser!.id;
+    const documentId = getSingleParam(req.params.documentId);
+
+    if (!documentId) {
+      res.status(400).json({
+        success: false,
+        message: "A valid document ID is required.",
+      });
+      return;
+    }
+
+    try {
+      // Match both ID and owner ID. A shared recipient, even with EDIT access,
+      // cannot delete another user's document by calling this endpoint directly.
+      const document = await prisma.document.findFirst({
+        where: { id: documentId, ownerId: userId, deletedAt: null },
+        select: {
+          id: true,
+          originalName: true,
+          storageKey: true,
+        },
+      });
+
+      // Use the same response for missing and non-owned documents.
+      if (!document) {
+        res.status(404).json({
+          success: false,
+          message: "Document not found or you are not its owner.",
+        });
+        return;
+      }
+
+      // Soft-delete and revoke active shares. This immediately removes the
+      // document from normal document listings while preserving audit history.
+      const deletedAt = new Date();
+      await prisma.document.update({
+        where: { id: document.id },
+        data: {
+          deletedAt,
+          permissions: {
+            updateMany: {
+              where: { revokedAt: null },
+              data: { revokedAt: deletedAt },
+            },
+          },
+        },
+      });
+
+      // Remove the stored file. If it is already missing, the database record
+      // is still securely marked deleted; report other filesystem errors.
+      const filePath = getSafeFilePath(document.storageKey);
+      let fileRemoved = false;
+
+      if (filePath) {
+        try {
+          await unlink(filePath);
+          fileRemoved = true;
+        } catch (fileError) {
+          if ((fileError as NodeJS.ErrnoException).code !== "ENOENT") {
+            console.error("Deleted document file could not be removed:", fileError);
+          }
+        }
+      }
+
+      await recordAudit({
+        actorId: userId,
+        documentId: document.id,
+        action: "DOCUMENT_DELETE",
+        success: true,
+        ...auditRequest(req),
+        details: {
+          fileName: document.originalName,
+          fileRemoved,
+        },
+      }).catch((auditError) => {
+        // Do not undo a deletion if audit logging fails; preserve the server log.
+        console.error("Document deletion audit logging failed:", auditError);
+      });
+
+      res.status(200).json({
+        success: true,
+        message: "Document deleted successfully.",
+      });
+    } catch (error) {
+      console.error("Document deletion failed:", error);
+      res.status(500).json({
+        success: false,
+        message: "Unable to delete the document.",
+      });
+    }
+  },
+);
+
 // GET /api/documents/:documentId/preview
 // Preview supported files and record a view after successful delivery.
 router.get(
