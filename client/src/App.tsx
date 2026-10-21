@@ -326,11 +326,29 @@ export default function App() {
       }
 
       const blob = await response.blob();
-      const mime = (blob.type || doc.mimeType || "application/octet-stream")
-        .split(";")[0]
-        .trim()
-        .toLowerCase();
       const filename = doc.originalName || doc.title || "document";
+      const responseMime = (blob.type || "").split(";")[0].trim().toLowerCase();
+      const metadataMime = (doc.mimeType || "").split(";")[0].trim().toLowerCase();
+      const extension = filename.includes(".") ? filename.slice(filename.lastIndexOf(".")).toLowerCase() : "";
+      const mimeByExtension: Record<string, string> = {
+        ".pdf": "application/pdf",
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".txt": "text/plain",
+        ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      };
+      // Prefer a valid response MIME; fall back to supported metadata and then
+      // the known extension for legacy records whose MIME metadata is incorrect.
+      const knownMimes = new Set([
+        "application/pdf", "image/png", "image/jpeg", "text/plain",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ]);
+      const mime = knownMimes.has(responseMime)
+        ? responseMime
+        : knownMimes.has(metadataMime)
+          ? metadataMime
+          : mimeByExtension[extension] || "application/octet-stream";
       objectUrl = URL.createObjectURL(blob);
       const safeTitle = (doc.title || filename).replace(/[&<>"']/g, (ch) => ({
         "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
@@ -339,7 +357,7 @@ export default function App() {
         "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
       })[ch]!);
       const url = objectUrl;
-      const isImage = mime.startsWith("image/") && mime !== "image/svg+xml";
+      const isImage = ["image/png", "image/jpeg"].includes(mime);
       const isText = mime.startsWith("text/") || [
         "application/json", "application/xml", "application/javascript",
       ].includes(mime) || /\.(txt|csv|json|xml|md|log)$/i.test(filename);
