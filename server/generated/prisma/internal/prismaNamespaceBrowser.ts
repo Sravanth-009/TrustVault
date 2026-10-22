@@ -55,7 +55,8 @@ export const ModelName = {
   Document: 'Document',
   Permission: 'Permission',
   AuditLog: 'AuditLog',
-  user_sessions: 'user_sessions'
+  user_sessions: 'user_sessions',
+  Notification: 'Notification'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -142,6 +143,19 @@ export const User_sessionsScalarFieldEnum = {
 } as const
 
 export type User_sessionsScalarFieldEnum = (typeof User_sessionsScalarFieldEnum)[keyof typeof User_sessionsScalarFieldEnum]
+
+
+export const NotificationScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  title: 'title',
+  message: 'message',
+  type: 'type',
+  read: 'read',
+  createdAt: 'createdAt'
+} as const
+
+export type NotificationScalarFieldEnum = (typeof NotificationScalarFieldEnum)[keyof typeof NotificationScalarFieldEnum]
 
 
 export const SortOrder = {

@@ -18,8 +18,9 @@ model User {
   updatedAt    DateTime     @updatedAt
   auditEvents  AuditLog[]   @relation("AuditActor")
   documents    Document[]   @relation("DocumentOwner")
-  grantsGiven  Permission[] @relation("PermissionGrantor")
-  permissions  Permission[] @relation("PermissionRecipient")
+  grantsGiven   Permission[]   @relation("PermissionGrantor")
+  permissions   Permission[]   @relation("PermissionRecipient")
+  notifications Notification[]
 }
 
 model Document {
@@ -98,4 +99,17 @@ enum UserRole {
 enum PermissionLevel {
   READ
   EDIT
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }

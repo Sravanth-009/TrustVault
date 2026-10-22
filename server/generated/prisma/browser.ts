@@ -42,3 +42,8 @@ export type AuditLog = Prisma.AuditLogModel
  * 
  */
 export type user_sessions = Prisma.user_sessionsModel
+/**
+ * Model Notification
+ * 
+ */
+export type Notification = Prisma.NotificationModel

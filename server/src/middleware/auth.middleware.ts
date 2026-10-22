@@ -1,4 +1,3 @@
-
 import type { Request, Response, NextFunction } from "express";
 import { prisma } from "../utils/prisma.js";
 
@@ -9,6 +8,8 @@ declare global {
     interface Request {
       authUser?: {
         id: string;
+        name?: string;
+        email?: string;
         role: TrustVaultRole;
       };
     }
@@ -39,6 +40,8 @@ export async function requireAuth(
       where: { id: userId },
       select: {
         id: true,
+        name: true,
+        email: true,
         role: true,
         active: true,
       },
@@ -58,6 +61,8 @@ export async function requireAuth(
 
     req.authUser = {
       id: user.id,
+      name: user.name,
+      email: user.email,
       role: user.role,
     };
 
@@ -73,15 +78,11 @@ export async function requireAuth(
 }
 
 /**
- * Restrict an endpoint to specific roles.
- * Always use after requireAuth.
+ * Authorize the specified roles.
+ * Role check always follows requireAuth so req.authUser is present.
  */
 export function requireRole(...allowedRoles: TrustVaultRole[]) {
-  return (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): void => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.authUser) {
       res.status(401).json({
         success: false,
@@ -93,7 +94,7 @@ export function requireRole(...allowedRoles: TrustVaultRole[]) {
     if (!allowedRoles.includes(req.authUser.role)) {
       res.status(403).json({
         success: false,
-        message: "You do not have permission to perform this action",
+        message: "Forbidden: insufficient permissions",
       });
       return;
     }

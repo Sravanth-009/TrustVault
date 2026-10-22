@@ -1,5 +1,5 @@
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 
 // Uses Vercel's VITE_API_URL in production and localhost for local development.
@@ -43,6 +43,16 @@ type PermissionItem = {
     name?: string;
     email?: string;
   };
+};
+
+type NotificationItem = {
+  id: string;
+  userId: string;
+  title: string;
+  message: string;
+  type: "PERMISSION_GRANTED" | "PERMISSION_REVOKED" | string;
+  read: boolean;
+  createdAt: string;
 };
 
 async function apiRequest<T = any>(
@@ -124,6 +134,69 @@ export default function App() {
   const [loadingActivity, setLoadingActivity] = useState(false);
   const [deletingDocumentId, setDeletingDocumentId] = useState<string | null>(null);
 
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [showNotifications, setShowNotifications] = useState<boolean>(false);
+  const [toastAlert, setToastAlert] = useState<{ id: string; title: string; message: string; type: string } | null>(null);
+  const seenNotificationIdsRef = useRef<Set<string>>(new Set());
+
+  const loadNotifications = useCallback(async (isInitial = false) => {
+    try {
+      const data = await apiRequest<{ success: boolean; notifications: NotificationItem[]; unreadCount: number }>("/notifications");
+      if (Array.isArray(data?.notifications)) {
+        setNotifications(data.notifications);
+        setUnreadCount(typeof data.unreadCount === "number" ? data.unreadCount : 0);
+
+        if (!isInitial) {
+          const fresh = data.notifications.find(
+            (n) => !n.read && !seenNotificationIdsRef.current.has(n.id)
+          );
+          if (fresh) {
+            setToastAlert({
+              id: fresh.id,
+              title: fresh.title,
+              message: fresh.message,
+              type: fresh.type,
+            });
+          }
+        }
+        data.notifications.forEach((n) => seenNotificationIdsRef.current.add(n.id));
+      }
+    } catch {
+      // ignore notification errors
+    }
+  }, []);
+
+  const handleMarkNotificationRead = async (id: string) => {
+    try {
+      await apiRequest(`/notifications/${encodeURIComponent(id)}/read`, { method: "PATCH" });
+      setNotifications((current) =>
+        current.map((n) => (n.id === id ? { ...n, read: true } : n))
+      );
+      setUnreadCount((count) => Math.max(0, count - 1));
+    } catch (err) {
+      console.error("Failed to mark notification as read", err);
+    }
+  };
+
+  const handleMarkAllNotificationsRead = async () => {
+    try {
+      await apiRequest("/notifications/mark-all-read", { method: "POST" });
+      setNotifications((current) => current.map((n) => ({ ...n, read: true })));
+      setUnreadCount(0);
+    } catch (err) {
+      console.error("Failed to mark all notifications read", err);
+    }
+  };
+
+  useEffect(() => {
+    if (!toastAlert) return;
+    const timer = setTimeout(() => {
+      setToastAlert(null);
+    }, 6000);
+    return () => clearTimeout(timer);
+  }, [toastAlert]);
+
   const showError = (value: unknown) => {
     setError(value instanceof Error ? value.message : "Something went wrong.");
     setMessage("");
@@ -166,6 +239,7 @@ export default function App() {
     const intervalId = window.setInterval(() => {
       if (!document.hidden) {
         void refreshDocuments();
+        void loadNotifications(false);
       }
     }, 5000);
 
@@ -187,6 +261,7 @@ export default function App() {
           setUser(currentUser as User);
           const docs = await apiRequest("/documents");
           if (mounted) setDocuments(extractDocuments(docs));
+          if (mounted) void loadNotifications(true);
         }
       } catch {
         if (mounted) setUser(null);
@@ -221,6 +296,7 @@ export default function App() {
 
       await loadCurrentUser();
       await loadDocuments();
+      await loadNotifications(true);
       setMessage(authMode === "login" ? "Welcome back!" : "Account created successfully.");
       setPassword("");
     } catch (err) {
@@ -236,6 +312,10 @@ export default function App() {
       await apiRequest("/auth/logout", { method: "POST" });
       setUser(null);
       setDocuments([]);
+      setNotifications([]);
+      setUnreadCount(0);
+      setToastAlert(null);
+      setShowNotifications(false);
       setMessage("You have signed out securely.");
       setSharingDocument(null);
     } catch (err) {
@@ -542,7 +622,7 @@ export default function App() {
     setMessage("");
 
     try {
-      await apiRequest(
+      const res = await apiRequest<any>(
         `/documents/${encodeURIComponent(sharingDocument.id)}/permissions`,
         {
           method: "POST",
@@ -553,12 +633,20 @@ export default function App() {
         },
       );
 
-      setMessage(`Permission granted to ${shareEmail.trim()}.`);
+      const notice = res?.message || `Permission (${shareLevel}) granted to ${shareEmail.trim()}.`;
+      setMessage(notice);
+      setToastAlert({
+        id: Date.now().toString(),
+        title: "Permission Granted",
+        message: `Granted ${shareLevel} access for "${sharingDocument.title}" to ${shareEmail.trim()}. Notification alerts sent to both sender and receiver.`,
+        type: "PERMISSION_GRANTED",
+      });
       setShareEmail("");
       const data = await apiRequest(
         `/documents/${encodeURIComponent(sharingDocument.id)}/permissions`,
       );
       setPermissions(extractPermissions(data));
+      void loadNotifications(false);
     } catch (err) {
       showError(err);
     } finally {
@@ -591,7 +679,7 @@ export default function App() {
     setMessage("");
 
     try {
-      await apiRequest(
+      const res = await apiRequest<any>(
         `/documents/${encodeURIComponent(sharingDocument.id)}/permissions/${encodeURIComponent(permission.id)}`,
         { method: "DELETE" },
       );
@@ -599,7 +687,16 @@ export default function App() {
       setPermissions((current) =>
         current.filter((item) => item.id !== permission.id),
       );
-      setMessage("Document access revoked successfully.");
+      const targetUser = permission.user?.name || permission.user?.email || "User";
+      const notice = res?.message || `Document access revoked for ${targetUser}.`;
+      setMessage(notice);
+      setToastAlert({
+        id: Date.now().toString(),
+        title: "Permission Revoked",
+        message: `Revoked access to "${sharingDocument.title}" for ${targetUser}. Notification alerts sent to both sender and receiver.`,
+        type: "PERMISSION_REVOKED",
+      });
+      void loadNotifications(false);
     } catch (err) {
       showError(err);
     } finally {
@@ -740,6 +837,77 @@ export default function App() {
         </a>
 
         <div className="topbar-actions">
+          <div className="notification-bell-wrapper">
+            <button
+              className={`notification-bell-btn ${unreadCount > 0 ? "has-unread" : ""}`}
+              onClick={() => setShowNotifications((prev) => !prev)}
+              aria-label="View notifications"
+              title="Notifications"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+              {unreadCount > 0 && (
+                <span className="notification-badge-counter">{unreadCount}</span>
+              )}
+            </button>
+
+            {showNotifications && (
+              <div className="notification-dropdown-panel">
+                <div className="notification-dropdown-head">
+                  <div className="notification-dropdown-title">
+                    <strong>Notifications</strong>
+                    {unreadCount > 0 && (
+                      <span className="unread-pill">{unreadCount} unread</span>
+                    )}
+                  </div>
+                  {unreadCount > 0 && (
+                    <button
+                      className="mark-all-read-action"
+                      onClick={handleMarkAllNotificationsRead}
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                </div>
+
+                <div className="notification-dropdown-body">
+                  {notifications.length === 0 ? (
+                    <div className="notification-dropdown-empty">
+                      <span>🔔</span>
+                      <p>No notifications yet</p>
+                    </div>
+                  ) : (
+                    notifications.map((n) => (
+                      <div
+                        key={n.id}
+                        className={`notification-dropdown-card ${n.read ? "is-read" : "is-unread"} ${n.type === "PERMISSION_GRANTED" ? "type-granted" : "type-revoked"}`}
+                        onClick={() => !n.read && handleMarkNotificationRead(n.id)}
+                      >
+                        <div className="notification-card-header">
+                          <span className={`status-pill ${n.type === "PERMISSION_GRANTED" ? "granted-pill" : "revoked-pill"}`}>
+                            {n.type === "PERMISSION_GRANTED" ? "Access Granted" : "Access Revoked"}
+                          </span>
+                          <span className="notification-date">
+                            {new Date(n.createdAt).toLocaleDateString([], {
+                              month: "short",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                        <h4 className="notification-card-title">{n.title}</h4>
+                        <p className="notification-card-message">{n.message}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
           <span className="session-status">
             <span className="status-dot" /> Secure session active
           </span>
@@ -760,6 +928,28 @@ export default function App() {
           {user.role} ACCOUNT
         </div>
       </section>
+
+      {toastAlert && (
+        <div
+          className={`floating-toast-alert ${toastAlert.type === "PERMISSION_GRANTED" ? "toast-granted" : "toast-revoked"}`}
+          role="alert"
+        >
+          <div className="toast-icon">
+            {toastAlert.type === "PERMISSION_GRANTED" ? "🔑" : "🚫"}
+          </div>
+          <div className="toast-content">
+            <strong>{toastAlert.title}</strong>
+            <p>{toastAlert.message}</p>
+          </div>
+          <button
+            className="toast-close"
+            onClick={() => setToastAlert(null)}
+            aria-label="Dismiss alert"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {error && (
         <div className="alert alert-error" role="alert">

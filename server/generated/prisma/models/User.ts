@@ -210,6 +210,7 @@ export type UserWhereInput = {
   documents?: Prisma.DocumentListRelationFilter
   grantsGiven?: Prisma.PermissionListRelationFilter
   permissions?: Prisma.PermissionListRelationFilter
+  notifications?: Prisma.NotificationListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -225,6 +226,7 @@ export type UserOrderByWithRelationInput = {
   documents?: Prisma.DocumentOrderByRelationAggregateInput
   grantsGiven?: Prisma.PermissionOrderByRelationAggregateInput
   permissions?: Prisma.PermissionOrderByRelationAggregateInput
+  notifications?: Prisma.NotificationOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -243,6 +245,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   documents?: Prisma.DocumentListRelationFilter
   grantsGiven?: Prisma.PermissionListRelationFilter
   permissions?: Prisma.PermissionListRelationFilter
+  notifications?: Prisma.NotificationListRelationFilter
 }, "id" | "email">
 
 export type UserOrderByWithAggregationInput = {
@@ -286,6 +289,7 @@ export type UserCreateInput = {
   documents?: Prisma.DocumentCreateNestedManyWithoutOwnerInput
   grantsGiven?: Prisma.PermissionCreateNestedManyWithoutGrantedByInput
   permissions?: Prisma.PermissionCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -301,6 +305,7 @@ export type UserUncheckedCreateInput = {
   documents?: Prisma.DocumentUncheckedCreateNestedManyWithoutOwnerInput
   grantsGiven?: Prisma.PermissionUncheckedCreateNestedManyWithoutGrantedByInput
   permissions?: Prisma.PermissionUncheckedCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserUpdateInput = {
@@ -316,6 +321,7 @@ export type UserUpdateInput = {
   documents?: Prisma.DocumentUpdateManyWithoutOwnerNestedInput
   grantsGiven?: Prisma.PermissionUpdateManyWithoutGrantedByNestedInput
   permissions?: Prisma.PermissionUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -331,6 +337,7 @@ export type UserUncheckedUpdateInput = {
   documents?: Prisma.DocumentUncheckedUpdateManyWithoutOwnerNestedInput
   grantsGiven?: Prisma.PermissionUncheckedUpdateManyWithoutGrantedByNestedInput
   permissions?: Prisma.PermissionUncheckedUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -483,6 +490,20 @@ export type UserUpdateOneWithoutAuditEventsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutAuditEventsInput, Prisma.UserUpdateWithoutAuditEventsInput>, Prisma.UserUncheckedUpdateWithoutAuditEventsInput>
 }
 
+export type UserCreateNestedOneWithoutNotificationsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutNotificationsInput, Prisma.UserUncheckedCreateWithoutNotificationsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutNotificationsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutNotificationsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutNotificationsInput, Prisma.UserUncheckedCreateWithoutNotificationsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutNotificationsInput
+  upsert?: Prisma.UserUpsertWithoutNotificationsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutNotificationsInput, Prisma.UserUpdateWithoutNotificationsInput>, Prisma.UserUncheckedUpdateWithoutNotificationsInput>
+}
+
 export type UserCreateWithoutDocumentsInput = {
   id?: string
   name: string
@@ -495,6 +516,7 @@ export type UserCreateWithoutDocumentsInput = {
   auditEvents?: Prisma.AuditLogCreateNestedManyWithoutActorInput
   grantsGiven?: Prisma.PermissionCreateNestedManyWithoutGrantedByInput
   permissions?: Prisma.PermissionCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutDocumentsInput = {
@@ -509,6 +531,7 @@ export type UserUncheckedCreateWithoutDocumentsInput = {
   auditEvents?: Prisma.AuditLogUncheckedCreateNestedManyWithoutActorInput
   grantsGiven?: Prisma.PermissionUncheckedCreateNestedManyWithoutGrantedByInput
   permissions?: Prisma.PermissionUncheckedCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutDocumentsInput = {
@@ -539,6 +562,7 @@ export type UserUpdateWithoutDocumentsInput = {
   auditEvents?: Prisma.AuditLogUpdateManyWithoutActorNestedInput
   grantsGiven?: Prisma.PermissionUpdateManyWithoutGrantedByNestedInput
   permissions?: Prisma.PermissionUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutDocumentsInput = {
@@ -553,6 +577,7 @@ export type UserUncheckedUpdateWithoutDocumentsInput = {
   auditEvents?: Prisma.AuditLogUncheckedUpdateManyWithoutActorNestedInput
   grantsGiven?: Prisma.PermissionUncheckedUpdateManyWithoutGrantedByNestedInput
   permissions?: Prisma.PermissionUncheckedUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutGrantsGivenInput = {
@@ -567,6 +592,7 @@ export type UserCreateWithoutGrantsGivenInput = {
   auditEvents?: Prisma.AuditLogCreateNestedManyWithoutActorInput
   documents?: Prisma.DocumentCreateNestedManyWithoutOwnerInput
   permissions?: Prisma.PermissionCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutGrantsGivenInput = {
@@ -581,6 +607,7 @@ export type UserUncheckedCreateWithoutGrantsGivenInput = {
   auditEvents?: Prisma.AuditLogUncheckedCreateNestedManyWithoutActorInput
   documents?: Prisma.DocumentUncheckedCreateNestedManyWithoutOwnerInput
   permissions?: Prisma.PermissionUncheckedCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutGrantsGivenInput = {
@@ -600,6 +627,7 @@ export type UserCreateWithoutPermissionsInput = {
   auditEvents?: Prisma.AuditLogCreateNestedManyWithoutActorInput
   documents?: Prisma.DocumentCreateNestedManyWithoutOwnerInput
   grantsGiven?: Prisma.PermissionCreateNestedManyWithoutGrantedByInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutPermissionsInput = {
@@ -614,6 +642,7 @@ export type UserUncheckedCreateWithoutPermissionsInput = {
   auditEvents?: Prisma.AuditLogUncheckedCreateNestedManyWithoutActorInput
   documents?: Prisma.DocumentUncheckedCreateNestedManyWithoutOwnerInput
   grantsGiven?: Prisma.PermissionUncheckedCreateNestedManyWithoutGrantedByInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutPermissionsInput = {
@@ -644,6 +673,7 @@ export type UserUpdateWithoutGrantsGivenInput = {
   auditEvents?: Prisma.AuditLogUpdateManyWithoutActorNestedInput
   documents?: Prisma.DocumentUpdateManyWithoutOwnerNestedInput
   permissions?: Prisma.PermissionUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutGrantsGivenInput = {
@@ -658,6 +688,7 @@ export type UserUncheckedUpdateWithoutGrantsGivenInput = {
   auditEvents?: Prisma.AuditLogUncheckedUpdateManyWithoutActorNestedInput
   documents?: Prisma.DocumentUncheckedUpdateManyWithoutOwnerNestedInput
   permissions?: Prisma.PermissionUncheckedUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserUpsertWithoutPermissionsInput = {
@@ -683,6 +714,7 @@ export type UserUpdateWithoutPermissionsInput = {
   auditEvents?: Prisma.AuditLogUpdateManyWithoutActorNestedInput
   documents?: Prisma.DocumentUpdateManyWithoutOwnerNestedInput
   grantsGiven?: Prisma.PermissionUpdateManyWithoutGrantedByNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutPermissionsInput = {
@@ -697,6 +729,7 @@ export type UserUncheckedUpdateWithoutPermissionsInput = {
   auditEvents?: Prisma.AuditLogUncheckedUpdateManyWithoutActorNestedInput
   documents?: Prisma.DocumentUncheckedUpdateManyWithoutOwnerNestedInput
   grantsGiven?: Prisma.PermissionUncheckedUpdateManyWithoutGrantedByNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutAuditEventsInput = {
@@ -711,6 +744,7 @@ export type UserCreateWithoutAuditEventsInput = {
   documents?: Prisma.DocumentCreateNestedManyWithoutOwnerInput
   grantsGiven?: Prisma.PermissionCreateNestedManyWithoutGrantedByInput
   permissions?: Prisma.PermissionCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutAuditEventsInput = {
@@ -725,6 +759,7 @@ export type UserUncheckedCreateWithoutAuditEventsInput = {
   documents?: Prisma.DocumentUncheckedCreateNestedManyWithoutOwnerInput
   grantsGiven?: Prisma.PermissionUncheckedCreateNestedManyWithoutGrantedByInput
   permissions?: Prisma.PermissionUncheckedCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutAuditEventsInput = {
@@ -755,6 +790,7 @@ export type UserUpdateWithoutAuditEventsInput = {
   documents?: Prisma.DocumentUpdateManyWithoutOwnerNestedInput
   grantsGiven?: Prisma.PermissionUpdateManyWithoutGrantedByNestedInput
   permissions?: Prisma.PermissionUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutAuditEventsInput = {
@@ -766,6 +802,83 @@ export type UserUncheckedUpdateWithoutAuditEventsInput = {
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  documents?: Prisma.DocumentUncheckedUpdateManyWithoutOwnerNestedInput
+  grantsGiven?: Prisma.PermissionUncheckedUpdateManyWithoutGrantedByNestedInput
+  permissions?: Prisma.PermissionUncheckedUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutNotificationsInput = {
+  id?: string
+  name: string
+  email: string
+  passwordHash: string
+  role?: $Enums.UserRole
+  active?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  auditEvents?: Prisma.AuditLogCreateNestedManyWithoutActorInput
+  documents?: Prisma.DocumentCreateNestedManyWithoutOwnerInput
+  grantsGiven?: Prisma.PermissionCreateNestedManyWithoutGrantedByInput
+  permissions?: Prisma.PermissionCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutNotificationsInput = {
+  id?: string
+  name: string
+  email: string
+  passwordHash: string
+  role?: $Enums.UserRole
+  active?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  auditEvents?: Prisma.AuditLogUncheckedCreateNestedManyWithoutActorInput
+  documents?: Prisma.DocumentUncheckedCreateNestedManyWithoutOwnerInput
+  grantsGiven?: Prisma.PermissionUncheckedCreateNestedManyWithoutGrantedByInput
+  permissions?: Prisma.PermissionUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutNotificationsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutNotificationsInput, Prisma.UserUncheckedCreateWithoutNotificationsInput>
+}
+
+export type UserUpsertWithoutNotificationsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutNotificationsInput, Prisma.UserUncheckedUpdateWithoutNotificationsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutNotificationsInput, Prisma.UserUncheckedCreateWithoutNotificationsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutNotificationsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutNotificationsInput, Prisma.UserUncheckedUpdateWithoutNotificationsInput>
+}
+
+export type UserUpdateWithoutNotificationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  auditEvents?: Prisma.AuditLogUpdateManyWithoutActorNestedInput
+  documents?: Prisma.DocumentUpdateManyWithoutOwnerNestedInput
+  grantsGiven?: Prisma.PermissionUpdateManyWithoutGrantedByNestedInput
+  permissions?: Prisma.PermissionUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutNotificationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  auditEvents?: Prisma.AuditLogUncheckedUpdateManyWithoutActorNestedInput
   documents?: Prisma.DocumentUncheckedUpdateManyWithoutOwnerNestedInput
   grantsGiven?: Prisma.PermissionUncheckedUpdateManyWithoutGrantedByNestedInput
   permissions?: Prisma.PermissionUncheckedUpdateManyWithoutUserNestedInput
@@ -781,6 +894,7 @@ export type UserCountOutputType = {
   documents: number
   grantsGiven: number
   permissions: number
+  notifications: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -788,6 +902,7 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   documents?: boolean | UserCountOutputTypeCountDocumentsArgs
   grantsGiven?: boolean | UserCountOutputTypeCountGrantsGivenArgs
   permissions?: boolean | UserCountOutputTypeCountPermissionsArgs
+  notifications?: boolean | UserCountOutputTypeCountNotificationsArgs
 }
 
 /**
@@ -828,6 +943,13 @@ export type UserCountOutputTypeCountPermissionsArgs<ExtArgs extends runtime.Type
   where?: Prisma.PermissionWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountNotificationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.NotificationWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -842,6 +964,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   documents?: boolean | Prisma.User$documentsArgs<ExtArgs>
   grantsGiven?: boolean | Prisma.User$grantsGivenArgs<ExtArgs>
   permissions?: boolean | Prisma.User$permissionsArgs<ExtArgs>
+  notifications?: boolean | Prisma.User$notificationsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -884,6 +1007,7 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   documents?: boolean | Prisma.User$documentsArgs<ExtArgs>
   grantsGiven?: boolean | Prisma.User$grantsGivenArgs<ExtArgs>
   permissions?: boolean | Prisma.User$permissionsArgs<ExtArgs>
+  notifications?: boolean | Prisma.User$notificationsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -896,6 +1020,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     documents: Prisma.$DocumentPayload<ExtArgs>[]
     grantsGiven: Prisma.$PermissionPayload<ExtArgs>[]
     permissions: Prisma.$PermissionPayload<ExtArgs>[]
+    notifications: Prisma.$NotificationPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1304,6 +1429,7 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   documents<T extends Prisma.User$documentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$documentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DocumentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   grantsGiven<T extends Prisma.User$grantsGivenArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$grantsGivenArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PermissionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   permissions<T extends Prisma.User$permissionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$permissionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PermissionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  notifications<T extends Prisma.User$notificationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$notificationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NotificationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1827,6 +1953,30 @@ export type User$permissionsArgs<ExtArgs extends runtime.Types.Extensions.Intern
   take?: number
   skip?: number
   distinct?: Prisma.PermissionScalarFieldEnum | Prisma.PermissionScalarFieldEnum[]
+}
+
+/**
+ * User.notifications
+ */
+export type User$notificationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Notification
+   */
+  select?: Prisma.NotificationSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Notification
+   */
+  omit?: Prisma.NotificationOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.NotificationInclude<ExtArgs> | null
+  where?: Prisma.NotificationWhereInput
+  orderBy?: Prisma.NotificationOrderByWithRelationInput | Prisma.NotificationOrderByWithRelationInput[]
+  cursor?: Prisma.NotificationWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.NotificationScalarFieldEnum | Prisma.NotificationScalarFieldEnum[]
 }
 
 /**

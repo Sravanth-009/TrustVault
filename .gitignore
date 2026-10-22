@@ -1,4 +1,4 @@
-﻿# Environment variables and secrets
+# Environment variables and secrets
 .env
 .env.*
 !.env.example
@@ -21,3 +21,5 @@ server/trustvault-test.txt
 
 # Local schema backup
 server/prisma/schema.local-backup.prisma
+*.backup.ts
+desktop.ini

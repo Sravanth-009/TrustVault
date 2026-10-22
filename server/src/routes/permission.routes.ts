@@ -1,4 +1,3 @@
-
 import { Router, type Request, type Response } from "express";
 import { PermissionLevel } from "../../generated/prisma/client.js";
 import { requireAuth } from "../middleware/auth.middleware.js";
@@ -40,7 +39,7 @@ async function checkOwner(
   res: Response,
   documentId: string,
   action: string,
-): Promise<boolean> {
+): Promise<{ id: string; ownerId: string; title: string } | null> {
   const userId = req.authUser?.id;
 
   if (!userId || !documentId) {
@@ -48,7 +47,7 @@ async function checkOwner(
       success: false,
       message: "A valid document ID is required.",
     });
-    return false;
+    return null;
   }
 
   const document = await prisma.document.findFirst({
@@ -59,6 +58,7 @@ async function checkOwner(
     select: {
       id: true,
       ownerId: true,
+      title: true,
     },
   });
 
@@ -69,25 +69,23 @@ async function checkOwner(
       success: false,
       message: "Forbidden: only the document owner can manage permissions.",
     });
-    return false;
+    return null;
   }
 
-  return true;
+  return document;
 }
 
 // Only the document owner can grant READ or EDIT permission.
 router.post("/:documentId/permissions", async (req, res) => {
   try {
     const documentId = getParam(req.params.documentId);
-
-    if (
-      !(await checkOwner(
-        req,
-        res,
-        documentId,
-        "PERMISSION_GRANT_DENIED",
-      ))
-    ) {
+    const document = await checkOwner(
+      req,
+      res,
+      documentId,
+      "PERMISSION_GRANT_DENIED",
+    );
+    if (!document) {
       return;
     }
 
@@ -118,6 +116,7 @@ router.post("/:documentId/permissions", async (req, res) => {
       where: { email },
       select: {
         id: true,
+        name: true,
         email: true,
         active: true,
       },
@@ -186,9 +185,32 @@ router.post("/:documentId/permissions", async (req, res) => {
       },
     });
 
+    // Create notification alert for both SENDER and RECEIVER
+    const senderName = req.authUser!.name || req.authUser!.email;
+    const recipientName = recipient.name || recipient.email;
+    const docTitle = document.title;
+
+    await prisma.notification.createMany({
+      data: [
+        {
+          userId: req.authUser!.id,
+          title: "Permission Granted",
+          message: `You granted ${level} access to "${docTitle}" for ${recipientName} (${recipient.email}).`,
+          type: "PERMISSION_GRANTED",
+        },
+        {
+          userId: recipient.id,
+          title: "Access Granted",
+          message: `${senderName} granted you ${level} access to "${docTitle}".`,
+          type: "PERMISSION_GRANTED",
+        },
+      ],
+    });
+
     res.status(200).json({
       success: true,
       permission,
+      message: `Permission (${level}) granted to ${recipientName}. Alerts sent to both sender and receiver.`,
     });
   } catch (error) {
     console.error("Grant permission error:", error);
@@ -204,15 +226,13 @@ router.post("/:documentId/permissions", async (req, res) => {
 router.get("/:documentId/permissions", async (req, res) => {
   try {
     const documentId = getParam(req.params.documentId);
-
-    if (
-      !(await checkOwner(
-        req,
-        res,
-        documentId,
-        "PERMISSION_LIST_DENIED",
-      ))
-    ) {
+    const document = await checkOwner(
+      req,
+      res,
+      documentId,
+      "PERMISSION_LIST_DENIED",
+    );
+    if (!document) {
       return;
     }
 
@@ -257,14 +277,13 @@ router.delete(
       const documentId = getParam(req.params.documentId);
       const permissionId = getParam(req.params.permissionId);
 
-      if (
-        !(await checkOwner(
-          req,
-          res,
-          documentId,
-          "PERMISSION_REVOKE_DENIED",
-        ))
-      ) {
+      const document = await checkOwner(
+        req,
+        res,
+        documentId,
+        "PERMISSION_REVOKE_DENIED",
+      );
+      if (!document) {
         return;
       }
 
@@ -274,9 +293,14 @@ router.delete(
           documentId,
           revokedAt: null,
         },
-        select: {
-          id: true,
-          userId: true,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
         },
       });
 
@@ -308,12 +332,35 @@ router.delete(
         userAgent: req.get("user-agent"),
         details: {
           recipientUserId: permission.userId,
+          recipientEmail: permission.user?.email,
         },
+      });
+
+      // Create notification alert for both SENDER and RECEIVER
+      const senderName = req.authUser!.name || req.authUser!.email;
+      const recipientName = permission.user?.name || permission.user?.email || "User";
+      const docTitle = document.title;
+
+      await prisma.notification.createMany({
+        data: [
+          {
+            userId: req.authUser!.id,
+            title: "Permission Revoked",
+            message: `You revoked access to "${docTitle}" for ${recipientName}.`,
+            type: "PERMISSION_REVOKED",
+          },
+          {
+            userId: permission.userId,
+            title: "Access Revoked",
+            message: `${senderName} revoked your access to "${docTitle}".`,
+            type: "PERMISSION_REVOKED",
+          },
+        ],
       });
 
       res.json({
         success: true,
-        message: "Permission revoked.",
+        message: `Permission revoked for ${recipientName}. Alerts sent to both sender and receiver.`,
       });
     } catch (error) {
       console.error("Revoke permission error:", error);

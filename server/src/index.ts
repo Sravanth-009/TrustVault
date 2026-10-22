@@ -13,6 +13,7 @@ import authRoutes from "./routes/auth.routes.js";
 import documentRoutes from "./routes/document.routes.js";
 import permissionRoutes from "./routes/permission.routes.js";
 import auditRoutes from "./routes/audit.routes.js";
+import notificationRoutes from "./routes/notification.routes.js";
 import {
   requireAuth,
   requireRole,
@@ -156,6 +157,9 @@ app.use("/api/documents", permissionRoutes);
 
 // Audit verification routes
 app.use("/api/audit", auditRoutes);
+
+// Notification routes
+app.use("/api/notifications", notificationRoutes);
 
 // Protected route
 app.get("/api/protected", requireAuth, (req, res) => {
